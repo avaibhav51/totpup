@@ -48,39 +48,6 @@ ditto -c -k --sequesterRsrc --keepParent dist/Totpup.app dist/Totpup-mac.zip
 
 They extract the ZIP and open Totpup. This local build is not Developer ID signed or notarized, so macOS or organization policy may block it. If their policy permits this development build, Apple's [Open Anyway procedure](https://support.apple.com/en-gb/102445) can authorize that specific app. The source-build route is preferable for this prototype. A normal public release should be signed and notarized by the publisher.
 
-## Publish this project on GitHub
-
-Recommended repository name: **`totpup`**.
-
-Description: **Your little authentication companion — a native macOS TOTP app with a playful pup, menu bar access, notch peeks, and launcher widgets.**
-
-1. Sign into GitHub and open [New repository](https://github.com/new).
-2. Enter the name and description above. Choose Private for a coworker-only project, or Public if you want anyone to view the code.
-3. Create an empty repository: leave GitHub's README, `.gitignore`, and license initialization options unchecked because this project already has local content. A public repository can receive a license in a later deliberate licensing decision.
-4. In Terminal (assuming the repository owner is `avaibhav51`):
-
-```sh
-cd /Users/VaibhavAgarwal/mac-totp-widget
-git init -b main
-git add .
-git commit -m "Initial Totpup macOS prototype"
-git remote add origin https://github.com/avaibhav51/totpup.git
-git push -u origin main
-```
-
-GitHub requires authenticated Git access. If it asks for a password over HTTPS, use a personal access token rather than your GitHub account password. GitHub CLI is another option for browser-based authentication:
-
-```sh
-brew install gh
-gh auth login
-```
-
-Authenticate before the push. To share a private repository, invite your coworker's GitHub account through the repository's collaborator settings. Build outputs and generated previews are excluded by `.gitignore`. Credentials remain in macOS Keychain, not in the source project; do not add enrollment QR images or secrets to the repository.
-
-See [GitHub's existing-project instructions](https://docs.github.com/en/migrations/importing-source-code/using-the-command-line-to-import-source-code/adding-locally-hosted-code-to-github).
-
-The app's Settings → About Totpup section links to [Vaibhav's website](https://avaibhav51.github.io/) and [GitHub profile](https://github.com/avaibhav51).
-
 ## First account
 
 Choose **Bring an account home**. Paste a Base32 secret or a standard `otpauth://totp/…` enrollment URI, or import an image containing one enrollment QR. Enter the service and account names, then save. During the final four seconds, a small Next preview fades in on account cards, the popup, and notch panel. It shows the following period’s code; clicking continues to copy only the currently valid code. Codes support SHA-1, SHA-256 and SHA-512, 6–8 digits, and configurable periods carried by setup URIs. Sample cards are clearly marked demo and can be copied to try the clipboard interaction; their codes are not valid for real accounts. Clipboard writes are checked before showing copy feedback.
