@@ -1,6 +1,6 @@
 # totpup
 
-## Current implementation — 0.3.2
+## Current implementation — 0.3.5
 
 A compact account window with inline settings, a menu bar paw, notch hover panel, draggable popup, and native launcher tiles. The solid **Biscuit** theme is used throughout; detailed help appears in hover tooltips. Only working controls are shown. Notch visibility is 0.5, 1, or 2 seconds with fixed segmented choices. The previous native code-widget experiment and its cache writer are removed; the Keychain recovery history remains in `KEYCHAIN-AUDIT.md`.
 
@@ -61,8 +61,8 @@ The main den is a single window. Opening it repeatedly or clicking its Dock icon
 Quick access settings are independent toggles:
 
 - **Menu bar icon:** the paw beside the clock opens the same movable code popup as the shortcut. Right-click it for Open Totpup and Quit.
-- **Notch hover:** hovering immediately below the notch slides down a separate code panel. Settings let you choose 0.5, 1, or 2 seconds (default 1). It stays open while the pointer is inside it. Macs without a notch use the top center edge. Mouse-position polling uses public AppKit APIs and does not require screen recording or Accessibility permission.
-- **Quick popup:** Control + Option + P opens a compact panel. Drag its header to move it; the position is retained on reopening and saved across launches. Click outside or press Escape to dismiss it. This shortcut uses Carbon hotkey registration; conflicting shortcuts are reported in the app.
+- **Notch hover:** hovering immediately below the notch slides down a separate code panel. Settings let you choose 0.5, 1, or 2 seconds (default 1). It stays open while the pointer is inside it. One unlocked saved account uses a compact 300×185 panel; multiple accounts, demo cards, and the locked view use 360×270. Settings offers 0–70% notch background transparency (default 10%, preserving saved preferences); foreground codes remain opaque and Reduce Transparency keeps the background solid. Macs without a notch use the top center edge. Mouse-position polling uses public AppKit APIs and does not require screen recording or Accessibility permission.
+- **Quick popup:** Control + Option + P and the menu bar paw open the same adaptive panel: 300×185 for one unlocked saved account, otherwise 360×270. The panel resizes when account/lock state changes, retaining its top-left placement within the screen. Drag its header to move it; the position is retained on reopening and saved across launches. Click outside or press Escape to dismiss it. This shortcut uses Carbon hotkey registration; conflicting shortcuts are reported in the app.
 
 The app bundle embeds a **WidgetKit extension** with small and medium launcher tiles on the desktop and in Notification Center. Add **Totpup** through macOS **Edit Widgets**. **Fetch a code** opens the live popup. The installed tiles do not display account codes, offer account configuration, or access Keychain.
 
@@ -85,7 +85,7 @@ The pup briefly bobs on arrival, reacts when a code is fetched, and naps while l
 
 ## Storage and access
 
-Account metadata and secrets are stored separately in non-synchronizing, device-only Keychain items. Secrets are loaded into memory while the vault is open. Locking clears the application's secret cache. Optional local authentication uses Touch ID or the Mac login password; it locks after two minutes without an account action, on sleep, and at next launch. This is application-level access gating, not a separate biometric ACL on every Keychain item. Clipboard codes clear after 20 seconds if the clipboard has not subsequently changed.
+Account metadata and secrets are stored separately in non-synchronizing, device-only Keychain items. The service name is `app.totpup.authenticator`: the item account `accounts` contains encoded account metadata, and each account UUID identifies a separate item containing its Base32 TOTP secret. With the current non-synchronizing SecItem queries and no data-protection-keychain opt-in, this uses the macOS file-based Keychain, normally the user’s login Keychain. UI preferences such as notch duration/transparency are stored separately in UserDefaults under the app bundle domain; no enrollment secrets are written there. Secrets are loaded into memory while the vault is open. Locking clears the application's secret cache. Optional local authentication uses Touch ID or the Mac login password; it locks after two minutes without an account action, on sleep, and at next launch. This is application-level access gating, not a separate biometric ACL on every Keychain item. Clipboard codes clear after 20 seconds if the clipboard has not subsequently changed.
 
 ## Architecture and roadmap
 

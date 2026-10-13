@@ -52,6 +52,7 @@ final class Vault: ObservableObject {
     @Published var accounts: [Account] = []
     @Published var locked = false
     @Published var error: String?
+    @Published private(set) var loadError: String?
     @Published var copiedID: UUID?
     @Published var showAdd = false
     @Published var showSettings = false
@@ -63,6 +64,9 @@ final class Vault: ObservableObject {
     }
     @Published var notchDuration: Double {
         didSet { guard persistsPreferences else { return }; UserDefaults.standard.set(notchDuration <= 0.5 ? 0.5 : (notchDuration <= 1 ? 1.0 : 2.0), forKey: "notchDuration") }
+    }
+    @Published var notchTransparency: Double {
+        didSet { guard persistsPreferences else { return }; UserDefaults.standard.set(min(0.7, max(0, notchTransparency)), forKey: "notchTransparency") }
     }
     @Published var popupEnabled: Bool {
         didSet { guard persistsPreferences else { return }; UserDefaults.standard.set(popupEnabled, forKey: "popupEnabled") }
@@ -77,7 +81,7 @@ final class Vault: ObservableObject {
     private var secrets: [UUID: String] = [:]
     private var clipboardGeneration = 0
     private var idleTask: Task<Void, Never>?
-    private(set) var ready = false
+    @Published private(set) var ready = false
 
     init(preview: Bool = false) {
         persistsPreferences = !preview
@@ -86,6 +90,7 @@ final class Vault: ObservableObject {
         notchEnabled = defaults.object(forKey: "notchEnabled") as? Bool ?? true
         let savedNotchDuration = (defaults.object(forKey: "notchDuration") as? NSNumber)?.doubleValue ?? 1
         notchDuration = savedNotchDuration <= 0.5 ? 0.5 : (savedNotchDuration <= 1 ? 1 : 2)
+        notchTransparency = min(0.7, max(0, (defaults.object(forKey: "notchTransparency") as? NSNumber)?.doubleValue ?? 0.1))
         popupEnabled = defaults.object(forKey: "popupEnabled") as? Bool ?? true
         requireUnlock = defaults.bool(forKey: "requireUnlock")
         playful = defaults.object(forKey: "playful") as? Bool ?? true
@@ -114,9 +119,13 @@ final class Vault: ObservableObject {
                 }
                 loadedSecrets[account.id] = secret
             }
-            accounts = loaded; secrets = loadedSecrets; ready = true
+            accounts = loaded; secrets = loadedSecrets; ready = true; loadError = nil
             touch()
-        } catch { self.error = error.localizedDescription; ready = false }
+        } catch {
+            loadError = error.localizedDescription
+            self.error = error.localizedDescription
+            ready = false
+        }
     }
     func add(_ enrollment: Enrollment) throws {
         guard !locked, ready else { throw NSError(domain: "Totpup", code: 2, userInfo: [NSLocalizedDescriptionKey: "Unlock the vault before adding an account."]) }

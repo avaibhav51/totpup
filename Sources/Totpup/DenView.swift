@@ -70,9 +70,9 @@ struct DenView: View {
                 .padding(.horizontal, 18)
 
                 HStack {
-                    Text(vault.accounts.isEmpty ? "A PEEK INSIDE" : "YOUR ACCOUNTS").tracking(1.7)
+                    Text(!vault.ready ? "ACCOUNTS UNAVAILABLE" : (vault.accounts.isEmpty ? "A PEEK INSIDE" : "YOUR ACCOUNTS")).tracking(1.7)
                     Spacer()
-                    Text(vault.accounts.isEmpty ? "DEMO" : "\(vault.accounts.count) IN YOUR DEN")
+                    Text(!vault.ready ? "KEYCHAIN" : (vault.accounts.isEmpty ? "DEMO" : "\(vault.accounts.count) IN YOUR DEN"))
                         .padding(.horizontal, 7).padding(.vertical, 4)
                         .background(Palette.sage.opacity(0.6), in: Capsule())
                 }.font(.system(size: 9, weight: .bold, design: .monospaced)).foregroundStyle(Palette.muted)
@@ -90,8 +90,19 @@ struct DenView: View {
                                 }
                         }
                         if filtered.isEmpty {
-                            Text(query.isEmpty ? "Add an account to get started." : "No pups by that name.")
-                                .font(.system(size: 13)).foregroundStyle(Palette.muted).padding(25)
+                            if !vault.ready {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Label("Couldn’t load accounts", systemImage: "lock.trianglebadge.exclamationmark")
+                                        .font(.system(size: 14, weight: .semibold))
+                                    Text(vault.loadError ?? "Your account data could not be read from Keychain.")
+                                        .font(.system(size: 11)).fixedSize(horizontal: false, vertical: true)
+                                    Text("A failed read does not delete your saved Keychain items.")
+                                        .font(.system(size: 11)).foregroundStyle(Palette.muted)
+                                }.foregroundStyle(Palette.orange).padding(14)
+                            } else {
+                                Text(query.isEmpty ? "Add an account to get started." : "No pups by that name.")
+                                    .font(.system(size: 13)).foregroundStyle(Palette.muted).padding(25)
+                            }
                         }
                     }.padding(.horizontal, 18).padding(.bottom, 12)
                 }.scrollIndicators(.hidden)
@@ -319,6 +330,15 @@ struct SettingsView: View {
                                 Text("2s").tag(2.0)
                             }.pickerStyle(.segmented).labelsHidden().frame(width: 154)
                         }
+                        HStack(spacing: 10) {
+                            Text("Notch transparency").font(.system(size: 12))
+                            Spacer(minLength: 0)
+                            Slider(value: $vault.notchTransparency, in: 0...0.7, step: 0.1)
+                                .frame(width: 100).accessibilityLabel("Notch background transparency")
+                            Text("\(Int((vault.notchTransparency * 100).rounded()))%")
+                                .font(.system(size: 11, design: .monospaced)).monospacedDigit()
+                                .frame(width: 32, alignment: .trailing)
+                        }.help("Changes only the notch background; codes stay opaque. Zero percent is solid. Reduce Transparency keeps it solid.")
                     }
                     detail("Quick popup", help: "Control + Option + P. Drag the header to move it; its position is remembered. Click outside or press Escape to dismiss.") {
                         Toggle("", isOn: $vault.popupEnabled).labelsHidden()

@@ -150,7 +150,10 @@ private final class PeekPanel: NSPanel {
     func start() {
         guard !started else { return }; started = true
         hoverTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
-            Task { @MainActor in self?.checkHover(); AppRuntime.refreshDock() }
+            Task { @MainActor in
+                if self?.popupPanel?.isVisible == true { self?.resizePopupIfNeeded() }
+                self?.checkHover(); AppRuntime.refreshDock()
+            }
         }
         let handler: EventHandlerUPP = { _, _, context in
             guard let context else { return OSStatus(eventNotHandledErr) }
@@ -270,7 +273,9 @@ private final class PeekPanel: NSPanel {
     func showPopup(fromWidget: Bool = false, anchor: NSPoint? = nil) {
         guard vault.popupEnabled || fromWidget else { return }
         let isNew = popupPanel == nil
-        if isNew { popupPanel = panel(width: 360, height: 310, notch: false) }
+        let size = codePanelSize
+        if isNew { popupPanel = panel(width: size.width, height: size.height, notch: false) }
+        else { resizePopupIfNeeded() }
         guard let panel = popupPanel,
               let screen = NSScreen.screens.first(where: { $0.frame.contains(NSEvent.mouseLocation) }) ?? NSScreen.main else { return }
         let frame = screen.visibleFrame
@@ -293,6 +298,23 @@ private final class PeekPanel: NSPanel {
         panel.makeKeyAndOrderFront(nil)
         AppRuntime.refreshDock()
     }
+    private var codePanelSize: NSSize {
+        let single = !vault.locked && vault.ready && vault.accounts.count == 1
+        return NSSize(width: single ? 300 : 360, height: single ? 185 : 270)
+    }
+    private func resizePopupIfNeeded() {
+        guard let panel = popupPanel, panel.frame.size != codePanelSize else { return }
+        let size = codePanelSize
+        var origin = NSPoint(x: panel.frame.minX, y: panel.frame.maxY - size.height)
+        if let screen = panel.screen ?? NSScreen.main {
+            let bounds = screen.visibleFrame
+            origin.x = min(max(origin.x, bounds.minX), bounds.maxX - size.width)
+            origin.y = min(max(origin.y, bounds.minY), bounds.maxY - size.height)
+        }
+        restoringPopup = true
+        panel.setFrame(NSRect(origin: origin, size: size), display: true)
+        restoringPopup = false
+    }
     func dismissPopup() { popupPanel?.orderOut(nil); AppRuntime.refreshDock() }
     private func dismissPopupIfOutside() {
         guard let panel = popupPanel, panel.isVisible, !panel.frame.contains(NSEvent.mouseLocation) else { return }
@@ -313,16 +335,23 @@ private final class PeekPanel: NSPanel {
         if inTrigger && !wasInTrigger && notchPanel?.isVisible != true { showNotch(on: screen) }
         wasInTrigger = inTrigger
         if let panel = notchPanel, panel.isVisible {
+            let destination = notchFrame(on: screen)
+            if panel.frame.size != destination.size { panel.setFrame(destination, display: true) }
             if panel.frame.contains(mouse) { hideAt = Date().addingTimeInterval(TimeInterval(vault.notchDuration)) }
             else if Date() >= hideAt { dismissNotch() }
         }
     }
+    private func notchFrame(on screen: NSScreen) -> NSRect {
+        let size = codePanelSize
+        return NSRect(x: screen.frame.midX - size.width / 2,
+                      y: screen.frame.maxY - max(screen.safeAreaInsets.top, 24) - size.height,
+                      width: size.width, height: size.height)
+    }
     private func showNotch(on screen: NSScreen) {
-        if notchPanel == nil { notchPanel = panel(width: 360, height: 270, notch: true) }
+        let destination = notchFrame(on: screen)
+        if notchPanel == nil { notchPanel = panel(width: destination.width, height: destination.height, notch: true) }
         guard let panel = notchPanel else { return }
         closeTask?.cancel(); hideAt = Date().addingTimeInterval(TimeInterval(vault.notchDuration))
-        let y = screen.frame.maxY - max(screen.safeAreaInsets.top, 24) - panel.frame.height
-        let destination = NSRect(x: screen.frame.midX - panel.frame.width / 2, y: y, width: panel.frame.width, height: panel.frame.height)
         panel.setFrame(destination.offsetBy(dx: 0, dy: 18), display: false)
         panel.alphaValue = 0; panel.orderFrontRegardless()
         NSAnimationContext.runAnimationGroup { context in
@@ -347,6 +376,7 @@ private final class PeekPanel: NSPanel {
 }
 
 struct QuickFetchView: View {
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @ObservedObject var vault: Vault
     var notch: Bool
     var openDen: () -> Void
@@ -371,6 +401,14 @@ struct QuickFetchView: View {
                     }
                 }
                 Spacer(minLength: 0)
+            } else if !vault.ready {
+                VStack(alignment: .leading, spacing: 8) {
+                    Label("Couldn’t load accounts", systemImage: "lock.trianglebadge.exclamationmark")
+                        .font(.system(size: 13, weight: .semibold)).foregroundStyle(Palette.orange)
+                    Text(vault.loadError ?? "Keychain access is unavailable.")
+                        .font(.system(size: 10)).fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 0)
             } else {
                 TimelineView(.periodic(from: .now, by: 1)) { timeline in
                     ScrollView {
@@ -388,7 +426,7 @@ struct QuickFetchView: View {
                                         Text("\(account.configuration.remaining(at: timeline.date))s").font(.system(size: 10, design: .monospaced)).foregroundStyle(Palette.muted)
                                         Image(systemName: vault.copiedID == account.id ? "checkmark.circle.fill" : (account.isDemo ? "sparkles" : "doc.on.doc"))
                                             .foregroundStyle(vault.copiedID == account.id ? Palette.orange : Palette.muted)
-                                    }.padding(10).background(.white.opacity(0.8), in: RoundedRectangle(cornerRadius: 12))
+                                    }.padding(10).background(.white.opacity(notch && !reduceTransparency ? 0.8 * (1 - vault.notchTransparency) : 0.8), in: RoundedRectangle(cornerRadius: 12))
                                 }.buttonStyle(.plain).help(account.isDemo ? "Copy demo code — not a real account" : "Copy code")
                             }
                         }
@@ -396,12 +434,12 @@ struct QuickFetchView: View {
                 }
             }
             HStack {
-                Text(vault.copiedID != nil ? "Copied · clears in 20s" : (vault.error ?? (vault.accounts.isEmpty && !vault.locked ? "Demo accounts" : "Secrets stay in your den."))).font(.system(size: 9)).foregroundStyle(Palette.muted)
+                Text(!vault.ready && !vault.locked ? "Keychain access needed" : (vault.copiedID != nil ? "Copied · clears in 20s" : (vault.error ?? (vault.accounts.isEmpty && !vault.locked ? "Demo accounts" : "Secrets stay in your den.")))).font(.system(size: 9)).foregroundStyle(Palette.muted)
                 Spacer()
                 Button("Open den ↗", action: openDen).font(.system(size: 10, weight: .semibold)).buttonStyle(.plain)
             }
         }.padding(18).foregroundStyle(Palette.ink)
-            .background(ThemeBackground().clipShape(RoundedRectangle(cornerRadius: notch ? 23 : 26)))
+            .background(Palette.background.opacity(notch && !reduceTransparency ? 1 - vault.notchTransparency : 1), in: RoundedRectangle(cornerRadius: notch ? 23 : 26))
             .overlay(RoundedRectangle(cornerRadius: notch ? 23 : 26).stroke(Palette.ink.opacity(0.12)))
             .preferredColorScheme(.light)
     }
