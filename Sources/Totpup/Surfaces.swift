@@ -7,6 +7,7 @@ import SwiftUI
     static var surfaces: SurfaceCoordinator?
     static var openDen: (() -> Void)?
     static var isPreview = false
+    static var previewDate: Date?
     private static var dockImage: NSImage?
     static func showDock() {
         if NSApp.activationPolicy() != .regular { NSApp.setActivationPolicy(.regular) }
@@ -411,6 +412,7 @@ struct QuickFetchView: View {
                 Spacer(minLength: 0)
             } else {
                 TimelineView(.periodic(from: .now, by: 1)) { timeline in
+                    let date = AppRuntime.previewDate ?? timeline.date
                     ScrollView {
                         VStack(spacing: 8) {
                             ForEach(vault.displayed) { account in
@@ -418,12 +420,12 @@ struct QuickFetchView: View {
                                     HStack {
                                         VStack(alignment: .leading, spacing: 3) {
                                             Text(account.title).font(.system(size: 11, weight: .semibold)).lineLimit(1)
-                                            Text(vault.code(account, at: timeline.date) ?? "———")
+                                            Text(vault.code(account, at: date) ?? "———")
                                                 .font(.system(size: 24, weight: .semibold, design: .monospaced)).tracking(3)
-                                            UpcomingCodeView(account: account, vault: vault, date: timeline.date, animated: vault.playful)
+                                            UpcomingCodeView(account: account, vault: vault, date: date, animated: vault.playful)
                                         }
                                         Spacer()
-                                        Text("\(account.configuration.remaining(at: timeline.date))s").font(.system(size: 10, design: .monospaced)).foregroundStyle(Palette.muted)
+                                        Text("\(account.configuration.remaining(at: date))s").font(.system(size: 10, design: .monospaced)).foregroundStyle(Palette.muted)
                                         Image(systemName: vault.copiedID == account.id ? "checkmark.circle.fill" : (account.isDemo ? "sparkles" : "doc.on.doc"))
                                             .foregroundStyle(vault.copiedID == account.id ? Palette.orange : Palette.muted)
                                     }.padding(10).background(.white.opacity(notch && !reduceTransparency ? 0.8 * (1 - vault.notchTransparency) : 0.8), in: RoundedRectangle(cornerRadius: 12))

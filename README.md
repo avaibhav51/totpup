@@ -1,5 +1,27 @@
 # totpup
 
+Your little authentication companion. Fetch TOTP codes from a compact Mac app, the menu bar, or a quick notch peek.
+
+## See Totpup in action
+
+<img src="docs/media/totpup-demo.gif" alt="Totpup demo walkthrough showing countdown rollover, a compact popup, settings, and the locked vault" width="458">
+
+*Animated walkthrough rendered from the actual app views with sample accounts and a simulated clock. No real enrollment secrets or account data appear. This illustrates UI states; it is not a recording of a real account login.*
+
+### Screenshots
+
+| Accounts and countdown | Upcoming code preview |
+| --- | --- |
+| <img src="docs/media/accounts.png" alt="Totpup account list with demo TOTP codes and countdown rings" width="320"> | <img src="docs/media/upcoming-code.png" alt="A small Next code preview during the final four seconds" width="320"> |
+
+| Compact popup | Inline settings | Locked vault |
+| --- | --- | --- |
+| <img src="docs/media/compact-popup.png" alt="Compact popup with one demo account" width="260"> | <img src="docs/media/settings.png" alt="Totpup inline settings with notch timing and transparency controls" width="260"> | <img src="docs/media/locked.png" alt="Locked Totpup vault with Touch ID or Mac password unlock" width="260"> |
+
+**What to try:** open the menu bar paw, click a code to copy, watch the Next preview before rollover, and set notch visibility/transparency. Native desktop and Notification Center tiles currently open the popup; they do not display codes inline.
+
+[Demo walkthrough and media regeneration instructions](docs/DEMO.md)
+
 ## Current implementation — 0.3.5
 
 A compact account window with inline settings, a menu bar paw, notch hover panel, draggable popup, and native launcher tiles. The solid **Biscuit** theme is used throughout; detailed help appears in hover tooltips. Only working controls are shown. Notch visibility is 0.5, 1, or 2 seconds with fixed segmented choices. The previous native code-widget experiment and its cache writer are removed; the Keychain recovery history remains in `KEYCHAIN-AUDIT.md`.
@@ -52,7 +74,7 @@ They extract the ZIP and open Totpup. This local build is not Developer ID signe
 
 Choose **Bring an account home**. Paste a Base32 secret or a standard `otpauth://totp/…` enrollment URI, or import an image containing one enrollment QR. Enter the service and account names, then save. During the final four seconds, a small Next preview fades in on account cards, the popup, and notch panel. It shows the following period’s code; clicking continues to copy only the currently valid code. Codes support SHA-1, SHA-256 and SHA-512, 6–8 digits, and configurable periods carried by setup URIs. Sample cards are clearly marked demo and can be copied to try the clipboard interaction; their codes are not valid for real accounts. Clipboard writes are checked before showing copy feedback.
 
-Organization accounts (JumpCloud, Okta, and others) work when they provide compatible TOTP enrollment and permit third-party authenticators. Proprietary activation QR codes, push approval, and number matching are not supported. Existing phone enrollment does not automatically expose its secret to Totpup. Don't reset organization MFA without a supported re-enrollment plan.
+Organization accounts work when they provide compatible TOTP enrollment and permit third-party authenticators. The Microsoft and GitHub demo cards are illustrative sample accounts, not native provider integrations. Proprietary activation QR codes, push approval, and number matching are not supported. Existing phone enrollment does not automatically expose its secret to Totpup. Don't reset organization MFA without a supported re-enrollment plan.
 
 ## Presentation and motion
 

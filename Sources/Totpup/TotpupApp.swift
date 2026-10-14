@@ -7,10 +7,16 @@ struct TotpupApp: App {
     @StateObject private var vault: Vault
     init() {
         let arguments = CommandLine.arguments
-        let preview = arguments.contains("--render-preview") || arguments.contains("--render-icon") || arguments.contains("--render-popup") || arguments.contains("--render-settings") || arguments.contains("--check-surfaces")
+        let preview = arguments.contains("--render-preview") || arguments.contains("--render-icon") || arguments.contains("--render-popup") || arguments.contains("--render-settings") || arguments.contains("--check-surfaces") || arguments.contains("--export-media")
         let vault = Vault(preview: preview || arguments.contains("--check-startup"))
         _vault = StateObject(wrappedValue: vault)
         AppRuntime.isPreview = preview || arguments.contains("--render-icon")
+        if arguments.contains("--export-media") {
+            do {
+                try DocumentationMedia.export(to: URL(fileURLWithPath: arguments.last ?? "docs/media", isDirectory: true))
+                exit(0)
+            } catch { print("Media export failed: \(error.localizedDescription)"); exit(1) }
+        }
         if !AppRuntime.isPreview {
             NSApplication.shared.setActivationPolicy(.accessory)
             AppRuntime.surfaces = SurfaceCoordinator(vault: vault)

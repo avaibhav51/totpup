@@ -103,7 +103,7 @@ final class Vault: ObservableObject {
     }
     var displayed: [Account] {
         if accounts.isEmpty && ready {
-            return [Account(id: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!, configuration: .init(issuer: "JumpCloud", label: "hello@totpup.demo"), isDemo: true),
+            return [Account(id: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!, configuration: .init(issuer: "Microsoft", label: "hello@totpup.demo"), isDemo: true),
                     Account(id: UUID(uuidString: "00000000-0000-0000-0000-000000000002")!, configuration: .init(issuer: "GitHub", label: "your next adventure"), isDemo: true)]
         }
         return accounts

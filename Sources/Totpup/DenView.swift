@@ -152,8 +152,9 @@ struct AccountCard: View {
     @ViewState<Bool> private var hovering = false
     var body: some View {
         TimelineView(.periodic(from: .now, by: 1)) { timeline in
-            let remaining = account.configuration.remaining(at: timeline.date)
-            let code = vault.code(account, at: timeline.date) ?? String(repeating: "—", count: account.configuration.digits)
+            let date = AppRuntime.previewDate ?? timeline.date
+            let remaining = account.configuration.remaining(at: date)
+            let code = vault.code(account, at: date) ?? String(repeating: "—", count: account.configuration.digits)
             let split = code.index(code.startIndex, offsetBy: code.count / 2)
             Button { vault.copy(account) } label: {
                 VStack(alignment: .leading, spacing: 10) {
@@ -185,7 +186,7 @@ struct AccountCard: View {
                             Text("\(remaining)").font(.system(size: 10, weight: .semibold, design: .monospaced))
                         }.frame(width: 32, height: 32)
                     }
-                    UpcomingCodeView(account: account, vault: vault, date: timeline.date, animated: animated)
+                    UpcomingCodeView(account: account, vault: vault, date: date, animated: animated)
                     if vault.copiedID == account.id {
                         Text("Fetched! Clipboard clears in 20 seconds.").font(.system(size: 9)).foregroundStyle(Palette.muted)
                     }
@@ -252,7 +253,7 @@ struct EnrollmentView: View {
                 Button { importQR() } label: { Label(scanning ? "Reading QR…" : "Import QR image", systemImage: "qrcode") }.disabled(scanning)
                 Text("PNG, JPEG, or a screenshot file").font(.system(size: 10)).foregroundStyle(Palette.muted)
             }
-            TextField("Service name, e.g. JumpCloud", text: $issuer).textFieldStyle(.roundedBorder)
+            TextField("Service name, e.g. Microsoft", text: $issuer).textFieldStyle(.roundedBorder)
             TextField("Account name or email", text: $label).textFieldStyle(.roundedBorder)
             Text("Secrets stay in this Mac’s Keychain. Totpup doesn’t upload them.").font(.system(size: 11)).foregroundStyle(Palette.muted)
             if let error { Text(error).font(.system(size: 12)).foregroundStyle(Palette.orange).fixedSize(horizontal: false, vertical: true) }
