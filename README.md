@@ -2,6 +2,20 @@
 
 Your little authentication companion. Fetch TOTP codes from a compact Mac app, the menu bar, or a quick notch peek.
 
+## A little pup at your notch
+
+A signature Totpup feature: hover below the notch to slide your codes into reach, then let the panel tuck away. One unlocked saved account gets a compact **300 × 185** panel. Choose **0.5s, 1s, or 2s** visibility and **0–70% background transparency**; the default is **10%**, and codes stay opaque. The panel stays open while you interact with it and respects Reduce Transparency.
+
+<img src="docs/media/notch-demo.gif" alt="Illustrated notch walkthrough showing a compact Microsoft demo account sliding down, background transparency changing, and the panel retracting" width="608">
+
+*Actual notch view rendered over an illustrated demo desktop. The presentation is slowed to compare transparency; it is not a recording of hardware hover events. All account data is fake.*
+
+| Solid · 0% | Translucent · 40% | More transparent · 70% |
+| --- | --- | --- |
+| <img src="docs/media/notch-transparency-0.png" alt="Solid notch background at zero percent transparency" width="210"> | <img src="docs/media/notch-transparency-40.png" alt="Desktop pattern visible through the notch background at forty percent transparency" width="210"> | <img src="docs/media/notch-transparency-70.png" alt="Seventy percent transparent notch background with opaque code text" width="210"> |
+
+[Default 10% compact notch screenshot](docs/media/notch-compact.png)
+
 ## See Totpup in action
 
 <img src="docs/media/totpup-demo.gif" alt="Totpup demo walkthrough showing countdown rollover, a compact popup, settings, and the locked vault" width="458">

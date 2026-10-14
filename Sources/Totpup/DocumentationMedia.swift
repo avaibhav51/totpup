@@ -26,8 +26,87 @@ import UniformTypeIdentifiers
             CGImageDestinationAddImage(gif, cgImage, [kCGImagePropertyGIFDictionary: [kCGImagePropertyGIFDelayTime: 0.5]] as CFDictionary)
         }
         guard CGImageDestinationFinalize(gif) else { throw CocoaError(.fileWriteUnknown) }
+        try exportNotchShowcase(to: directory)
         AppRuntime.previewDate = nil
-        print("Exported 5 demo screenshots and a 13-second animated walkthrough to \(directory.path)")
+        print("Exported screenshots, app walkthrough, and notch/transparency showcase to \(directory.path)")
+    }
+
+    private static func exportNotchShowcase(to directory: URL) throws {
+        let compact = notchCapture(transparency: 0.1, reveal: 1)
+        guard let png = compact.representation(using: .png, properties: [:]) else { throw CocoaError(.fileWriteUnknown) }
+        try png.write(to: directory.appendingPathComponent("notch-compact.png"))
+        for percent in [0, 40, 70] {
+            let shot = notchCapture(transparency: Double(percent) / 100, reveal: 1)
+            guard let data = shot.representation(using: .png, properties: [:]) else { throw CocoaError(.fileWriteUnknown) }
+            try data.write(to: directory.appendingPathComponent("notch-transparency-\(percent).png"))
+        }
+        guard let gif = CGImageDestinationCreateWithURL(directory.appendingPathComponent("notch-demo.gif") as CFURL, UTType.gif.identifier as CFString, 40, nil) else { throw CocoaError(.fileWriteUnknown) }
+        CGImageDestinationSetProperties(gif, [kCGImagePropertyGIFDictionary: [kCGImagePropertyGIFLoopCount: 0]] as CFDictionary)
+        for frame in 0..<40 {
+            let reveal: Double = frame < 4 ? 0 : (frame < 9 ? Double(frame - 4) / 5 : (frame < 34 ? 1 : max(0, 1 - Double(frame - 34) / 5)))
+            let transparency = frame < 16 ? 0.1 : (frame < 25 ? 0.4 : 0.7)
+            let bitmap = notchCapture(transparency: transparency, reveal: reveal)
+            guard let cg = bitmap.cgImage else { throw CocoaError(.fileWriteUnknown) }
+            CGImageDestinationAddImage(gif, cg, [kCGImagePropertyGIFDictionary: [kCGImagePropertyGIFDelayTime: 0.2]] as CFDictionary)
+        }
+        guard CGImageDestinationFinalize(gif) else { throw CocoaError(.fileWriteUnknown) }
+    }
+
+    private static func notchCapture(transparency: Double, reveal: Double) -> NSBitmapImageRep {
+        let vault = Vault(preview: true)
+        vault.playful = false; vault.notchTransparency = transparency
+        vault.accounts = Array(vault.displayed.prefix(1))
+        AppRuntime.previewDate = Date(timeIntervalSince1970: 1_700_000_036)
+        let root = VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("A little peek from the notch.").font(.system(size: 22, weight: .bold, design: .rounded))
+                    Text("Hover to fetch. Let your pup tuck away.").font(.system(size: 12)).foregroundStyle(Palette.muted)
+                }
+                Spacer()
+                Text("DEMO").font(.system(size: 9, weight: .bold, design: .monospaced)).foregroundStyle(Palette.orange)
+            }
+            ZStack(alignment: .top) {
+                LinearGradient(colors: [Color(red: 0.69, green: 0.79, blue: 0.70), Color(red: 0.95, green: 0.78, blue: 0.59)], startPoint: .topLeading, endPoint: .bottomTrailing)
+                Circle().fill(.white.opacity(0.35)).frame(width: 320).offset(x: -190, y: 135)
+                Circle().fill(Palette.orange.opacity(0.22)).frame(width: 260).offset(x: 180, y: 95)
+                VStack(alignment: .leading, spacing: 9) {
+                    ForEach(0..<11) { line in
+                        Capsule().fill(Palette.ink.opacity(0.12)).frame(width: line % 3 == 0 ? 190 : 280, height: 6)
+                    }
+                }.frame(width: 310, alignment: .leading).padding(22)
+                    .background(.white.opacity(0.2), in: RoundedRectangle(cornerRadius: 18)).offset(y: 100)
+                Rectangle().fill(.white.opacity(0.3)).frame(height: 28)
+                HStack {
+                    Image(systemName: "apple.logo")
+                    Text("Demo desktop").font(.system(size: 10, weight: .semibold))
+                    Spacer()
+                    Image(systemName: "pawprint.fill")
+                }.font(.system(size: 11)).padding(.horizontal, 16).frame(height: 28)
+                QuickFetchView(vault: vault, notch: true, openDen: {}, close: {})
+                    .frame(width: 300, height: 185).opacity(reveal)
+                    .offset(y: 36 - (1 - reveal) * 200)
+                UnevenRoundedRectangle(bottomLeadingRadius: 12, bottomTrailingRadius: 12)
+                    .fill(Color.black).frame(width: 130, height: 28)
+            }.frame(width: 560, height: 330).clipped()
+                .clipShape(RoundedRectangle(cornerRadius: 18))
+            HStack {
+                Text("ONE ACCOUNT · 300 × 185").font(.system(size: 9, weight: .semibold, design: .monospaced))
+                Spacer()
+                Text("Background transparency: \(Int((transparency * 100).rounded()))%")
+                    .font(.system(size: 11, weight: .semibold))
+            }
+            Text("Illustrated desktop + actual notch view · Sample account · Codes stay opaque")
+                .font(.system(size: 9)).foregroundStyle(Palette.muted)
+        }.padding(24).frame(width: 608, height: 470)
+            .foregroundStyle(Palette.ink).background(Palette.background).preferredColorScheme(.light)
+        let rectangle = NSRect(x: 0, y: 0, width: 608, height: 470)
+        let host = NSHostingView(rootView: root)
+        let window = NSWindow(contentRect: rectangle, styleMask: .borderless, backing: .buffered, defer: false)
+        window.contentView = host; host.frame = rectangle; host.layoutSubtreeIfNeeded()
+        guard let bitmap = host.bitmapImageRepForCachingDisplay(in: rectangle) else { fatalError("Cannot capture notch showcase") }
+        host.cacheDisplay(in: rectangle, to: bitmap)
+        return bitmap
     }
 
     private static func capture(scene: Scene, second: Int, walkthrough: Bool) -> NSBitmapImageRep {

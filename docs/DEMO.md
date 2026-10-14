@@ -12,8 +12,17 @@ The README uses a looping GIF because it embeds directly as a repository image. 
 | `settings.png` | Inline settings, timing, transparency, and protection |
 | `locked.png` | Locked vault view |
 | `totpup-demo.gif` | 13-second walkthrough of countdown rollover, popup, settings, and locking |
+| `notch-demo.gif` | Eight-second illustrated slide-down, transparency comparison, and retraction |
+| `notch-compact.png` | One-account notch at the default 10% transparency |
+| `notch-transparency-0.png` | Solid notch background |
+| `notch-transparency-40.png` | Midrange transparency |
+| `notch-transparency-70.png` | Maximum configured transparency |
 
 These are native-view renders using only the public demo secret and sample labels. The animated walkthrough uses a simulated clock and switches between rendered UI states. It is not a screen recording of mouse interaction, a real login, or a Touch ID prompt.
+
+## Notch showcase
+
+The notch is highlighted as Totpup's signature interaction, without claiming exclusivity over other apps. This showcase renders the actual `QuickFetchView` over a SwiftUI illustration of a desktop and physical notch, making the background alpha visible against a pattern. The background is illustrative; no user's screen is captured. Motion is rendered as a slowed presentation sequence, not recorded hardware hover timing. Transparency affects backgrounds, while code text remains opaque.
 
 ## Regenerate
 
